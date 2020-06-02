@@ -1,6 +1,6 @@
 width = 650;
 height = 420;
-MAX = 6;
+MAX = Infinity;
 max = 6;
 
 elementWidth = width * 0.1;
@@ -9,13 +9,10 @@ yOffset = 0.1 * width;
 elementStroke = 0.005 * width;
 top_rad_q = {x: yOffset, y: height/2};
 
-var queues = [];
-const queues_limit = 1;
-
 q_code_urls = {
-	'create_queue': baseUrl+'/snippets/queue/create.c', 
-	'enqueue':  baseUrl+'/snippets/queue/enqueue.c',
-	'dequeue':  baseUrl+'/snippets/queue/dequeue.c'
+	'create_queue': baseUrl+'/snippets/queue/create', 
+	'enqueue':  baseUrl+'/snippets/queue/enqueue',
+	'dequeue':  baseUrl+'/snippets/queue/dequeue'
 }
 
 q_codes = ['none', 'create_queue', 'enqueue', 'dequeue'];
@@ -132,24 +129,6 @@ function prepareVisualiserQ(queue){
 	moveElementTo(queue.front_pointer, top_rad_q.x + y + elementWidth*0.5, top_rad_q.y);
 }
 
-async function create_handler(){
-	if(queues.length == queues_limit)
-		throwError('.visualizer', 'Queue creation limit reached', 'danger');
-	else{
-		let arr = [];
-		for(let i = 1; i <= num_inputs; i++){
-			var text = $('#create_val_'+i).val();
-			text = parseFloat(text);
-			if(!isNaN(text))	
-				arr.push(text);
-		}
-		if(arr.length > 0)
-			await createQueue(arr, 'none');
-		else
-			throwError('.visualizer', 'Enter atleast one input', 'danger');
-	}
-}
-
 function getDataQueue(queue){
 	let rear_val = queue.arr[queue.q_rear];
 	if(queue.show == 'none')
@@ -162,18 +141,11 @@ async function createQueue(arr, show){
 		throw new Error("InvalidArgumentFoundError: argument 'arr' needs to be a valid Array");
 	else if(arr == undefined)
 		throw new Error("ArgumentNotFoundError: expected argument 'arr' not found");
-	else if(typeof(show) !== "string")
-		throw new Error("InvalidArgumentFoundError: argument 'show' needs to be a valid string");
 	else if(show == undefined)
 		show = 'none';
+	else if(typeof(show) !== "string")
+		throw new Error("InvalidArgumentFoundError: argument 'show' needs to be a valid string");
 	show_code(q_codes, 'create_queue');
-	let queue = await create_Queue(arr, show);
-	queues.push(queue);
-	show_code(q_codes, 'none');
-	return queue;
-}
-
-async function create_Queue(arr, show){
 	$('button').prop('disabled', true);
 	$(window).scrollTop(0);
 	let queue = new Queue(queues.length);
@@ -194,19 +166,9 @@ async function create_Queue(arr, show){
 	await highlight_lines('q', 9, 10, 'create_queue');
 
 	$('button').prop('disabled', false);
+	queues.push(queue);
+	show_code(q_codes, 'none');
 	return queue;
-}
-
-async function enq_handler(i){
-	if(queues.length > 0){
-		let data = parseFloat($('#ins_val_'+i).val());
-		if(!isNaN(data))
-			await enqueue(queues[i], data);
-		else
-			throwError('.code-viewer', 'Enter some Input', 'danger');
-	}
-	else
-		throwError('.visualizer', 'Create a queue first!', 'danger');
 }
 
 async function enqueue(queue, data){
@@ -251,13 +213,6 @@ async function enqueue(queue, data){
 	show_code(q_codes, 'none');
 	$('button').prop('disabled', false);
 	return null;
-}
-
-async function deq_handler(i){
-	if(queues.length > 0)
-		await dequeue(queues[i]);
-	else
-		throwError('.visualizer', 'Create a queue first!', 'danger');
 }
 
 async function dequeue(queue){
@@ -310,10 +265,4 @@ async function dequeue(queue){
 	$('button').prop('disabled', false);
 	show_code(q_codes, 'none');
 
-}
-
-function deleteQueue(queue){
-	queue.svg.remove();
-	$('#q_control_'+queue.id).remove();
-	queues.splice(queue.id, 1);
 }

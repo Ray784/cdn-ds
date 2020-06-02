@@ -2,9 +2,6 @@ width = 650;
 height = 420;
 MAX = 10;
 
-var trees_limit = 1;
-var trees = []
-
 MAX_LVLS = 5
 circleRadius = width * 0.025;
 centerOffset = width * 0.02;
@@ -14,13 +11,13 @@ circleStroke = 0.005 * width;
 root_rad = {x: width/2, y: yOffset};
 
 tree_code_urls = {
-	'create_tree': baseUrl+'/snippets/tree/create.c', 
-	'insert_tree': baseUrl+'/snippets/tree/insert.c',
-	'delete_tree': baseUrl+'/snippets/tree/delete.c',
-	'preorder': baseUrl+'/snippets/tree/preorder.c', 
-	'inorder': baseUrl+'/snippets/tree/inorder.c',
-	'postorder': baseUrl+'/snippets/tree/postorder.c',
-	'levelorder': baseUrl+'/snippets/tree/levelorder.c'
+	'create_tree': baseUrl+'/snippets/tree/create', 
+	'insert_tree': baseUrl+'/snippets/tree/insert',
+	'delete_tree': baseUrl+'/snippets/tree/delete',
+	'preorder': baseUrl+'/snippets/tree/preorder', 
+	'inorder': baseUrl+'/snippets/tree/inorder',
+	'postorder': baseUrl+'/snippets/tree/postorder',
+	'levelorder': baseUrl+'/snippets/tree/levelorder'
 }
 
 tree_codes = ['none', 'create_tree', 'insert_tree', 'delete_tree', 'inorder', 'preorder', 'postorder', 'levelorder'];
@@ -64,6 +61,8 @@ class Tree{
 		$('#operations .alert').remove();
 		$('#traversals .alert').remove();
 		this.svg = d3.select(`#bst_${data}`);
+		this.control = $(`#bst_control_${data}`);
+		this.holder = trees;
 		this.id = data;
 		this.root = null;
 	}
@@ -95,44 +94,17 @@ function prepareSVGTree(tree){
 		.text('root')
 }
 
-async function create_handler(){
-	$('button').prop('disabled', true);
-	if(trees.length == trees_limit){
-		throwError('.visualizer', 'Trees limit reached', 'danger');
-	}
-	else{
-		let arr = [];
-		for(let i = 1; i <= num_inputs; i++){
-			var text = $('#create_val_'+i).val();
-			text = parseFloat(text);
-			if(!isNaN(text))	
-				arr.push(text);
-		}
-		if(arr.length > 0)
-			await createBST(arr, 'none');
-		else
-			throwError('.visualizer', 'Enter atleast one input', 'danger');
-	}
-	$('button').prop('disabled', false);
-}
-
 async function createBST(arr, show){
 	if(!(arr instanceof Array))
 		throw new Error("InvalidArgumentFoundError: argument 'arr' needs to be a valid Array");
 	else if(arr == undefined)
 		throw new Error("ArgumentNotFoundError: expected argument 'arr' not found");
-	else if(typeof(show) !== "string")
-		throw new Error("InvalidArgumentFoundError: argument 'show' needs to be a valid string");
 	else if(show == undefined)
 		show = 'none';
+	else if(typeof(show) !== "string")
+		throw new Error("InvalidArgumentFoundError: argument 'show' needs to be a valid string");
 	show_code(tree_codes, 'create_tree');
-	let tree = await create_BST(arr, show);
-	trees.push(tree);
-	show_code(tree_codes, 'none');
-	return tree;
-}
 
-async function create_BST(elements_arr, show){
 	let tree = new Tree(trees.length);
 	prepareSVGTree(tree);
 	traverser = getTraverser(tree);
@@ -144,10 +116,10 @@ async function create_BST(elements_arr, show){
 	show_code(tree_codes, 'create_tree');
 	await highlight_lines('tree', 1, 4, 'create_tree'); 
 
-	for(i = 0; i < elements_arr.length; i++){
+	for(i = 0; i < arr.length; i++){
 		show_code(tree_codes, 'create_tree');
 		await highlight_lines('tree', 5, 6, 'create_tree');
-		tree.root = await addNode(tree, tree.root, elements_arr[i], 0, 0, root_rad.x, root_rad.y, 1);
+		tree.root = await addNode(tree, tree.root, arr[i], 0, 0, root_rad.x, root_rad.y, 1);
 	}
 
 	show_code(tree_codes, 'create_tree');
@@ -156,24 +128,12 @@ async function create_BST(elements_arr, show){
 	show_code(tree_codes, 'none');
 	traverser.remove();
 	traverser = null;
+	show_code(tree_codes, 'none');
+	trees.push(tree);
 	return tree;
 }
 
-async function insert_handler(i){
-	$('button').prop('disabled', true);
-	if(trees.length > 0){
-		let data = parseFloat($('#ins_val_'+i).val());
-		if(!isNaN(data))
-			trees[i].root = await insert_tree(trees[i], data);
-		else
-			throwError('.code-viewer', 'Enter some Input', 'danger');
-	}
-	else
-		throwError('.visualizer', 'Create a tree first!', 'danger');
-	$('button').prop('disabled', false);
-}
-
-async function insert_tree(tree, data){
+async function insertBST(tree, data){
 	if(!(tree instanceof Tree))
 		throw new Error("InvalidArgumentFoundError: argument 'tree' needs to be a valid queue created using 'CreateBST' method");
 	else if(tree == undefined)
@@ -235,21 +195,8 @@ function repair(tree, root, node, data, prev_x, prev_y, x, y, level){
 	return root;
 }
 
-async function delete_handler(i){
-	$('button').prop('disabled', true);
-	if(trees.length > 0){
-		let data = parseFloat($('#del_val_'+i).val());
-		if(!isNaN(data))
-			trees[i].root = await delete_tree(trees[i], data);
-		else
-			throwError('.code-viewer', 'Enter some Input', 'danger');
-	}
-	else
-		throwError('.visualizer', 'Create a tree first!', 'danger');
-	$('button').prop('disabled', false);
-}
 
-async function delete_tree(tree, data){
+async function deleteBST(tree, data){
 	if(!(tree instanceof Tree))
 		throw new Error("InvalidArgumentFoundError: argument 'tree' needs to be a valid queue created using 'CreateBST' method");
 	else if(tree == undefined)
@@ -397,17 +344,6 @@ async function deleteNode(tree, root, data, x, y, level){
 	return root;
 }
 
-async function inorder_handler(i){
-	if(trees.length > 0){
-		$('button').prop('disabled', true);
-		await inorder(trees[i]);
-		$('button').prop('disabled', false);
-	}
-	else
-		throwError('.visualizer', 'Create a tree first!', 'danger');
-	show_code(tree_codes, 'none');
-}
-
 async function inorder(tree){
 	$('button').prop('disabled', true);
 	traverser = getTraverser(tree);
@@ -415,13 +351,13 @@ async function inorder(tree){
 	$(window).scrollTop(0);
 	let temp = new TreeNode('#');
 
-	var stack = await createStack(temp, 'data');
+	var stack = await createStack([temp], 'data');
 
 	$('#output').empty();
 	$('#output').append('<div class="alert alert-info">Inorder: </div>');
 	await inorder_tree(tree, tree.root, root_rad.x, root_rad.y, 1, stack);
 	traverser.remove();
-	deleteStack(stack);
+	deleteDS(stack);
 	traverser = null;
 	$('button').prop('disabled', false);
 	return null;
@@ -465,29 +401,18 @@ async function inorder_tree(tree, root, x, y, level, stack){
 	moveElementTo(traverser, x, y);
 }
 
-async function preorder_handler(i){
-	if(trees.length > 0){
-		$('button').prop('disabled', true);
-		await preorder(trees[i]);
-		$('button').prop('disabled', false);
-	}
-	else
-		throwError('.visualizer', 'Create a tree first!', 'danger');
-	show_code(tree_codes, 'none');
-}
-
 async function preorder(tree){
 	$('button').prop('disabled', true);
 	traverser = getTraverser(tree);
 	showElement(traverser, 'circle', '#3F51B5');
 	$(window).scrollTop(0);
 	let temp = new TreeNode('#');
-	var stack = await createStack(temp, 'data');
+	var stack = await createStack([temp], 'data');
 	$('#output').empty();
 	$('#output').append('<div class="alert alert-info">Preorder: </div>');
 	await preorder_tree(tree, tree.root, root_rad.x, root_rad.y, 1, stack);
 	traverser.remove();
-	deleteStack(stack);
+	deleteDS(stack);
 	traverser = null;
 	$('button').prop('disabled', false);
 	return null;
@@ -531,29 +456,18 @@ async function preorder_tree(tree, root, x, y, level, stack){
 	show_code(tree_codes, 'none');
 }
 
-async function postorder_handler(i){
-	if(trees.length > 0){
-		$('button').prop('disabled', true);
-		await postorder(trees[i], trees[i].root, root_rad.x, root_rad.y, 1);
-		$('button').prop('disabled', false);
-	}
-	else
-		throwError('.visualizer', 'Create a tree first!', 'danger');
-	show_code(tree_codes, 'none');
-}
-
 async function postorder(tree){
 	$('button').prop('disabled', true);
 	traverser = getTraverser(tree);
 	showElement(traverser, 'circle', '#3F51B5');
 	$(window).scrollTop(0);
 	let temp = new TreeNode('#');
-	var stack = await createStack(temp, 'data');
+	var stack = await createStack([temp], 'data');
 	$('#output').empty();
 	$('#output').append('<div class="alert alert-info">Postorder: </div>');
 	await postorder_tree(tree, tree.root, root_rad.x, root_rad.y, 1, stack);
 	traverser.remove();
-	deleteStack(stack);
+	deleteDS(stack);
 	traverser = null;
 	$('button').prop('disabled', false);
 	show_code(tree_codes, 'none');
@@ -600,17 +514,6 @@ async function postorder_tree(tree, root, x, y, level, stack){
 	moveElementTo(traverser, x, y);
 	$('#output .alert').append(root.data+' ')
 	await highlight_line('tree', 5, 'postorder');
-	show_code(tree_codes, 'none');
-}
-
-async function levelorder_handler(i){
-	if(trees.length > 0){
-		MAX = 100;
-		await levelorder(trees[i]);
-	}
-	else
-		throwError('.visualizer', 'Create a tree first!', 'danger');
-	MAX = 10;
 	show_code(tree_codes, 'none');
 }
 
@@ -670,11 +573,5 @@ async function levelorder_tree(root){
 		await highlight_line('tree', 10, 'levelorder');
 		await highlight_line('tree', 4, 'levelorder');
 	}
-	deleteQueue(queue);
-}
-
-function deleteBST(tree){
-	tree.svg.remove();
-	$('#bst_control_'+tree.id).remove();
-	trees.splice(tree.id, 1);
+	deleteDS(queue);
 }
